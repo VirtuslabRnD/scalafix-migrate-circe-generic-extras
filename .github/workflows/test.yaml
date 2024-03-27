@@ -21,5 +21,7 @@ jobs:
         run: sbt "test"
       - name: Test runtime 
         run: |
-          diff <(scala-cli run input/build.scala input/src/main/scala/test/Example1.scala) <(scala-cli run output/build.scala output/src/main/scala/test/Example1.scala)
-          diff <(scala-cli run input/build.scala input/src/main/scala/test/Example2.scala) <(scala-cli run output/build.scala output/src/main/scala/test/Example2.scala)
+          opts="--server=false"
+          tests=src/main/scala/test
+          diff <(scala-cli run input/build.scala input/$tests/Example1.scala $opts) <(scala-cli run output/build.scala output/$tests/Example1.scala $opts)
+          diff <(scala-cli run input/build.scala input/$tests/Example2.scala $opts) <(scala-cli run output/build.scala output/$tests/Example2.scala $opts)
