@@ -1,0 +1,20 @@
+name: Tests
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  tests:
+    name: Test scalafix rules
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: coursier/cache-action@v6
+      - uses: coursier/setup-action@v1
+        with:
+          jvm: temurin:17
+
+      - name: Test rules
+        run: sbt "test"

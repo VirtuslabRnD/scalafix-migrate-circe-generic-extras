@@ -1,0 +1,2 @@
+org.virtuslab.migration.scala3.CirceGenericExtrasMigration
+org.virtuslab.migration.scala3.CirceLiteralMigration

@@ -1,0 +1,13 @@
+* Optional conversion of AnyVal with unwrapedCodec to opaque types 
+opaque type ThingId = String
+object ThingId {
+  given Codec[ThingId] = Codec.from(Decoder.decodeString, Encoder.encodeString)
+  def apply(value: String) = value
+  extension(value: ThingId){
+    def value: String = value
+  }
+}
+
+* replace enumeratum using Scala enums
+enum Color derives ConfiguredEnumCodec:
+    case Red, Green, Blue  
