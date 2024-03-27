@@ -15,6 +15,11 @@ jobs:
       - uses: coursier/setup-action@v1
         with:
           jvm: temurin:17
+          apps: scala-cli:1.2.0
 
       - name: Test rules
         run: sbt "test"
+      - name: Test runtime 
+        run: |
+          diff <(scala-cli run input/build.scala input/src/main/scala/test/Example1.scala) <(scala-cli run output/build.scala output/src/main/scala/test/Example1.scala)
+          diff <(scala-cli run input/build.scala input/src/main/scala/test/Example2.scala) <(scala-cli run output/build.scala output/src/main/scala/test/Example2.scala)

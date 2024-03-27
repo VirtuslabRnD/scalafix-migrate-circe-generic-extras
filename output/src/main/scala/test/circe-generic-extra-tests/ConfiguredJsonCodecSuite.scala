@@ -81,54 +81,15 @@ class ConfiguredJsonCodecSuite extends CirceSuite {
     }
   }
 
-  test("it should allow only one, named argument set to true") {
-    // Can't supply both
-    assertNoDiff(
-      compileErrors("@ConfiguredJsonCodec(encodeOnly = true, decodeOnly = true) case class X(a: Int)"),
-      """error: Unsupported arguments supplied to @ConfiguredJsonCodec
-        |@ConfiguredJsonCodec(encodeOnly = true, decodeOnly = true) case class X(a: Int)
-        | ^""".stripMargin
-    )
-
-    // Must specify the argument name
-    assertNoDiff(
-      compileErrors("@ConfiguredJsonCodec(true) case class X(a: Int)"),
-      """error: Unsupported arguments supplied to @ConfiguredJsonCodec
-        |@ConfiguredJsonCodec(true) case class X(a: Int)
-        | ^""".stripMargin
-    )
-    // Can't specify false
-    assertNoDiff(
-      compileErrors("@ConfiguredJsonCodec(encodeOnly = false) case class X(a: Int)"),
-      """error: Unsupported arguments supplied to @ConfiguredJsonCodec
-        |@ConfiguredJsonCodec(encodeOnly = false) case class X(a: Int)
-        | ^""".stripMargin
-    )
-  }
-
   test("@ConfiguredJsonCodec(encodeOnly = true) should only provide Encoder instances") {
     case class CaseClassEncodeOnly(foo: String, bar: Int) derives ConfiguredEncoder
     Encoder[CaseClassEncodeOnly]
     Encoder.AsObject[CaseClassEncodeOnly]
-
-    assertNoDiff(
-      compileErrors("Decoder[CaseClassEncodeOnly]"),
-      """error: could not find implicit value for parameter instance: io.circe.Decoder[CaseClassEncodeOnly]
-        |Decoder[CaseClassEncodeOnly]
-        |       ^""".stripMargin
-    )
   }
 
   test("@ConfiguredJsonCodec(decodeOnly = true) should provide Decoder instances") {
     case class CaseClassDecodeOnly(foo: String, bar: Int) derives ConfiguredDecoder
     Decoder[CaseClassDecodeOnly]
-
-    assertNoDiff(
-      compileErrors("Encoder[CaseClassDecodeOnly]"),
-      """error: could not find implicit value for parameter instance: io.circe.Encoder[CaseClassDecodeOnly]
-        |Encoder[CaseClassDecodeOnly]
-        |       ^""".stripMargin
-    )
   }
 
   test("@ConfiguredJsonCodec(encodeOnly = true) should only provide Encoder instances for generic case classes") {
@@ -136,25 +97,11 @@ class ConfiguredJsonCodecSuite extends CirceSuite {
     object CaseClassEncodeOnly { given [A: Encoder]: ConfiguredEncoder[CaseClassEncodeOnly[A]] = ConfiguredEncoder.derived }
     Encoder[CaseClassEncodeOnly[Int]]
     Encoder.AsObject[CaseClassEncodeOnly[Int]]
-
-    assertNoDiff(
-      compileErrors("Decoder[CaseClassEncodeOnly[Int]]"),
-      """error: could not find implicit value for parameter instance: io.circe.Decoder[CaseClassEncodeOnly[Int]]
-        |Decoder[CaseClassEncodeOnly[Int]]
-        |       ^""".stripMargin
-    )
   }
 
   test("@ConfiguredJsonCodec(decodeOnly = true) should provide Decoder instances for generic case classes") {
     case class CaseClassDecodeOnly[A](foo: A, bar: Int)
     object CaseClassDecodeOnly { given [A: Decoder]: ConfiguredDecoder[CaseClassDecodeOnly[A]] = ConfiguredDecoder.derived }
     Decoder[CaseClassDecodeOnly[Int]]
-
-    assertNoDiff(
-      compileErrors("Encoder[CaseClassDecodeOnly[Int]]"),
-      """error: could not find implicit value for parameter instance: io.circe.Encoder[CaseClassDecodeOnly[Int]]
-        |Encoder[CaseClassDecodeOnly[Int]]
-        |       ^""".stripMargin
-    )
   }
 }
