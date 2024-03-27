@@ -34,7 +34,7 @@ object Example2 extends App {
     "Request example: " + ExternalServiceRequest(
       ThingId("abc123"),
       "foo",
-      Instant.now()
+      Instant.ofEpochMilli(1711505683600L)
     ).asJson
   )
 
