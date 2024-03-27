@@ -8,7 +8,7 @@ import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec, JsonKey}
 import io.circe.syntax.EncoderOps
 import java.time.Instant
 
-object CirceUsage extends App {
+object Example2 extends App {
 
   // 1. deriveUnwrappedCodec
   case class ThingId(value: String) extends AnyVal

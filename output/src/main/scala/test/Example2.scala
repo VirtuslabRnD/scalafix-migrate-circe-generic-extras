@@ -7,7 +7,7 @@ import java.time.Instant
 import io.circe.{ Decoder, Encoder }
 import io.circe.derivation.{ Configuration, ConfiguredCodec }
 
-object CirceUsage extends App {
+object Example2 extends App {
 
   // 1. deriveUnwrappedCodec
   case class ThingId(value: String) extends AnyVal
@@ -20,13 +20,13 @@ object CirceUsage extends App {
   case class ExternalServiceRequest(id: ThingId, snakeCaseField: String, achievedAt: Instant)
   object ExternalServiceRequest {
     implicit val config: Configuration = Configuration.default
-    given ConfiguredCodec[ExternalServiceRequest] = ConfiguredCodec.derived(using summon[Configuration].withTransformConstructorNames {
+    given ConfiguredCodec[ExternalServiceRequest] = ConfiguredCodec.derived(using summon[Configuration].withTransformMemberNames {
   case "snakeCaseField" =>
     "snake_case_field"
   case "achievedAt" =>
     "acheivedAt"
   case name =>
-    summon[Configuration].transformConstructorNames(name)
+    summon[Configuration].transformMemberNames(name)
 })
   }
 

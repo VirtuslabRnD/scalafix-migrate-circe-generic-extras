@@ -276,51 +276,34 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
                 )
             }
 
-            val ctorNameTransformer = Option.when(config.renamedInCtor.nonEmpty) { (baseConfig: Term) =>
-              Term.Apply(
-                fun = Term.Select(baseConfig, Term.Name("withTransformConstructorNames")),
-                args = Term
-                  .PartialFunction(
-                    config.renamedInCtor.map { case (name, rename) =>
+            // It seems like derivation of ConfiguredJsonCodecs ignores `withTransformConstructorNames` arguments
+            // Instead we emmit single `withTransformMemberNames
+            val memberNameTransformer = Option.when(config.renamedInStats.nonEmpty || config.renamedInCtor.nonEmpty) {
+              (baseConfig: Term) =>
+                val allRenames = config.renamedInStats ++ config.renamedInCtor
+                Term.Apply(
+                  fun = Term.Select(baseConfig, Term.Name("withTransformMemberNames")),
+                  args = Term.PartialFunction(
+                    allRenames.toList.map { case (name, rename) =>
                       Case(pat = Lit.String(name), cond = None, body = Lit.String(rename))
-                    }.toList :+ Case(
+                    } :+ Case(
                       pat = Pat.Var(Term.Name("name")),
                       cond = None,
                       body = Term.Apply(
                         Term.Select(
                           configInstance,
-                          Term.Name("transformConstructorNames")
+                          Term.Name("transformMemberNames")
                         ),
                         List(Term.Name("name"))
                       )
                     )
                   ) :: Nil
-              )
-            }
-            val memberNameTransformer = Option.when(config.renamedInStats.nonEmpty) { (baseConfig: Term) =>
-              Term.Apply(
-                fun = Term.Select(baseConfig, Term.Name("withTransformMemberNames")),
-                args = Term.PartialFunction(
-                  config.renamedInStats.map { case (name, rename) =>
-                    Case(pat = Lit.String(name), cond = None, body = Lit.String(rename))
-                  }.toList :+ Case(
-                    pat = Pat.Var(Term.Name("name")),
-                    cond = None,
-                    body = Term.Apply(
-                      Term.Select(
-                        configInstance,
-                        Term.Name("transformMemberNames")
-                      ),
-                      List(Term.Name("name"))
-                    )
-                  )
-                ) :: Nil
-              )
+                )
             }
             val withoutDefaults = Option.when(config.noDefaults) { (baseConfig: Term) =>
               Term.Select(baseConfig, Term.Name("withoutDefaults"))
             }
-            val composedConfig = List(ctorNameTransformer, memberNameTransformer, withoutDefaults).flatten
+            val composedConfig = List(memberNameTransformer, withoutDefaults).flatten
               .foldRight[Term](configInstance)(_.apply(_))
             configInstance -> Term.ArgClause(values = List(composedConfig), mod = Some(Mod.Using()))
           }
@@ -540,7 +523,7 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
                             Patch.replaceTree(defn.body, newBody.syntax)
                           ).asPatch
 
-                        case _ => 
+                        case _ =>
                       }
                   }
                 }

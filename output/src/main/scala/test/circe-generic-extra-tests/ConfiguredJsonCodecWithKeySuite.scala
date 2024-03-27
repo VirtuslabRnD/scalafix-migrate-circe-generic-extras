@@ -25,11 +25,11 @@ object ConfiguredJsonCodecWithKeySuite {
       b <- arbitrary[Double]
     } yield ConfigExampleFoo(thisIsAField, a, b)
     implicit val arbitraryConfigExampleFoo: Arbitrary[ConfigExampleFoo] = Arbitrary(genConfigExampleFoo)
-    given ConfiguredCodec[ConfigExampleFoo] = ConfiguredCodec.derived(using summon[Configuration].withTransformConstructorNames {
+    given ConfiguredCodec[ConfigExampleFoo] = ConfiguredCodec.derived(using summon[Configuration].withTransformMemberNames {
   case "b" =>
     "myField"
   case name =>
-    summon[Configuration].transformConstructorNames(name)
+    summon[Configuration].transformMemberNames(name)
 })
   }
 

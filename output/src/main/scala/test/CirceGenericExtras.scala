@@ -26,31 +26,31 @@ object CirceGenericExtras {
     case class CClass0() derives ConfiguredCodec
     case class CClass1(name: String)
     object CClass1 {
-  given ConfiguredCodec[CClass1] = ConfiguredCodec.derived(using summon[Configuration].withTransformConstructorNames {
+  given ConfiguredCodec[CClass1] = ConfiguredCodec.derived(using summon[Configuration].withTransformMemberNames {
     case "name" =>
       "id"
     case name =>
-      summon[Configuration].transformConstructorNames(name)
+      summon[Configuration].transformMemberNames(name)
   })
 }
     case class CClass1Generic1[T](v: T)
     object CClass1Generic1 {
-  given [T: Encoder: Decoder]: ConfiguredCodec[CClass1Generic1[T]] = ConfiguredCodec.derived(using summon[Configuration].withTransformConstructorNames {
+  given [T: Encoder: Decoder]: ConfiguredCodec[CClass1Generic1[T]] = ConfiguredCodec.derived(using summon[Configuration].withTransformMemberNames {
     case "v" =>
       "firstValue"
     case name =>
-      summon[Configuration].transformConstructorNames(name)
+      summon[Configuration].transformMemberNames(name)
   })
 }
     case class CClass2Generic2[A, B](a: A, b: B)
     object CClass2Generic2 {
-  given [A: Encoder: Decoder, B: Encoder: Decoder]: ConfiguredCodec[CClass2Generic2[A, B]] = ConfiguredCodec.derived(using summon[Configuration].withTransformConstructorNames {
+  given [A: Encoder: Decoder, B: Encoder: Decoder]: ConfiguredCodec[CClass2Generic2[A, B]] = ConfiguredCodec.derived(using summon[Configuration].withTransformMemberNames {
     case "a" =>
       "first"
     case "b" =>
       "secondValue"
     case name =>
-      summon[Configuration].transformConstructorNames(name)
+      summon[Configuration].transformMemberNames(name)
   })
 }
     // @ConfiguredJsonCodec() sealed trait T1 { @JsonKey("memberName") def name: String }
