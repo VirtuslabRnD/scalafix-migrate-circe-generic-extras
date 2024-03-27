@@ -19,12 +19,16 @@ jobs:
 
       - name: Test rules
         run: sbt "test"
-      - name: Test runtime 
+      - name: Test outputs 
         run: |
-          opts="--server=false"
           tests=src/main/scala/test
           for file in Example1.scala Example2.scala ; do
             scala-cli run input/build.scala input/$tests/$file > input.out
             scala-cli run output/build.scala output/$tests/$file > output.out
             diff input.out output.out && echo "Test $file - ok" || exit 1
           done
+
+      - name: Test circe-generic-extern tests 
+        run: |
+          scala-cli test input
+          scala-cli test output
