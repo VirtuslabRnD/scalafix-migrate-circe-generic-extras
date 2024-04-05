@@ -18,7 +18,7 @@ jobs:
           apps: scala-cli:1.2.0
 
       - name: Test rules
-        run: sbt "test"
+        run: sbt "+test"
       - name: Test outputs 
         run: |
           tests=src/main/scala/test

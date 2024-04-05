@@ -4,7 +4,7 @@ import scalafix.v1._
 import scala.meta._
 import scala.collection.mutable
 
-class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigration") {
+final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigration") {
   implicit val dialect: Dialect = dialects.Scala3
 
   override def isRewrite: Boolean = true
@@ -259,8 +259,9 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
           }
         }
 
-        val (configInstance, usingConfig) = Option
-          .when(config.isDefined) {
+        val (configInstance, usingConfig) =
+          if (!config.isDefined) (None, None)
+          else {
             val configInstance = config.explicitConfig.getOrElse {
               patches += Patch.addGlobalImport(symbols.Configuration)
               // When using circe.derivation.annotation JsonCodec and JsonKey we probably don't have access to implicit Configuration
@@ -278,46 +279,53 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
 
             // It seems like derivation of ConfiguredJsonCodecs ignores `withTransformConstructorNames` arguments
             // Instead we emmit single `withTransformMemberNames
-            val memberNameTransformer = Option.when(config.renamedInStats.nonEmpty || config.renamedInCtor.nonEmpty) {
-              (baseConfig: Term) =>
-                val allRenames = config.renamedInStats ++ config.renamedInCtor
-                Term.Apply(
-                  fun = Term.Select(baseConfig, Term.Name("withTransformMemberNames")),
-                  args = Term.PartialFunction(
-                    allRenames.toList.map { case (name, rename) =>
-                      Case(pat = Lit.String(name), cond = None, body = Lit.String(rename))
-                    } :+ Case(
-                      pat = Pat.Var(Term.Name("name")),
-                      cond = None,
-                      body = Term.Apply(
-                        Term.Select(
-                          configInstance,
-                          Term.Name("transformMemberNames")
-                        ),
-                        List(Term.Name("name"))
+            val memberNameTransformer =
+              if (config.renamedInStats.isEmpty && config.renamedInCtor.isEmpty) None
+              else
+                Some { (baseConfig: Term) =>
+                  val allRenames = config.renamedInStats ++ config.renamedInCtor
+                  Term.Apply(
+                    fun = Term.Select(baseConfig, Term.Name("withTransformMemberNames")),
+                    args = Term.PartialFunction(
+                      allRenames.toList.map { case (name, rename) =>
+                        Case(pat = Lit.String(name), cond = None, body = Lit.String(rename))
+                      } :+ Case(
+                        pat = Pat.Var(Term.Name("name")),
+                        cond = None,
+                        body = Term.Apply(
+                          Term.Select(
+                            configInstance,
+                            Term.Name("transformMemberNames")
+                          ),
+                          List(Term.Name("name"))
+                        )
                       )
-                    )
-                  ) :: Nil
-                )
-            }
-            val withoutDefaults = Option.when(config.noDefaults) { (baseConfig: Term) =>
-              Term.Select(baseConfig, Term.Name("withoutDefaults"))
-            }
+                    ) :: Nil
+                  )
+                }
+            val withoutDefaults =
+              if (!config.noDefaults) None
+              else
+                Some { (baseConfig: Term) =>
+                  Term.Select(baseConfig, Term.Name("withoutDefaults"))
+                }
             val composedConfig = List(memberNameTransformer, withoutDefaults).flatten
               .foldRight[Term](configInstance)(_.apply(_))
-            configInstance -> Term.ArgClause(values = List(composedConfig), mod = Some(Mod.Using()))
+            Some(configInstance) -> Some(Term.ArgClause(values = List(composedConfig), mod = Some(Mod.Using())))
           }
-          .unzip
 
         val givenDerivedCodec = Defn.GivenAlias(
           mods = Nil,
           name = Name.Anonymous(),
-          paramClauseGroup = Option.when(tree.tparamClause.nonEmpty)(
-            Member.ParamClauseGroup(
-              tree.tparamClause.values.map(tparam => tparam.copy(cbounds = codecContextBounds ::: tparam.cbounds)),
-              Nil
-            )
-          ),
+          paramClauseGroup =
+            if (tree.tparamClause.isEmpty) None
+            else
+              Some(
+                Member.ParamClauseGroup(
+                  tree.tparamClause.values.map(tparam => tparam.copy(cbounds = codecContextBounds ::: tparam.cbounds)),
+                  Nil
+                )
+              ),
           decltpe = Type.Apply(
             tpe = codecType match {
               case types.CodecAsObject => types.Codec
@@ -401,7 +409,7 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
             var noDefaults = false
             val stats = defnTree match {
               case t: Defn.Class =>
-                t.ctor.paramClauses.iterator.flatten.flatMap(param => param.mods.map(param -> _)).foreach {
+                t.ctor.paramClauses.iterator.flatMap(_.values).flatMap(param => param.mods.map(param -> _)).foreach {
                   case (param, annot @ annots.JsonKey(name)) =>
                     renamedInCtor += param.name.value -> name
                   // case (param, annots.JsonNoDefault()) => noDefault += param.name.value
@@ -441,16 +449,20 @@ class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtrasMigrat
                 case _ => ()
               }
 
-            val (treeCodecAnnotation, explicitConfig) = t.mods.collectFirst {
-              case annot @ Mod.Annot(Init(names.JsonCodec(), _, args))        => (annot, args.flatten.headOption)
-              case annot @ Mod.Annot(Init(names.ConfiguredJsonCodec(), _, _)) => (annot, None)
-            }.unzip
+            val (treeCodecAnnotation, explicitConfig) = t.mods
+              .collectFirst {
+                case annot @ Mod.Annot(Init(names.JsonCodec(), _, args))        => (annot, args.flatten.headOption)
+                case annot @ Mod.Annot(Init(names.ConfiguredJsonCodec(), _, _)) => (annot, None)
+              } match {
+              case Some((annot, maybeConfig)) => Some(annot) -> maybeConfig
+              case _                          => (None, None)
+            }
 
             val config = Configuration(
               renamedInCtor = renamedInCtor.result(),
               renamedInStats = renamedInStats.result(),
               noDefaults = noDefaults,
-              explicitConfig = explicitConfig.flatten
+              explicitConfig = explicitConfig
             )
             memberRenamesInSymbol += t.name.value -> config.renamedInStats
 

@@ -1,7 +1,8 @@
 lazy val V = _root_.scalafix.sbt.BuildInfo
 
-val Scala2Version = "2.13.13"
-val Scala3Version = "3.4.0"
+val Scala212Version = "2.12.19"
+val Scala213Version = "2.13.13"
+val Scala3Version = "3.3.3"
 
 inThisBuild(
   List(
@@ -13,7 +14,8 @@ inThisBuild(
     developers := List(
       Developer("WojciechMazur", "Wojciech Mazur", "wmazur@virtuslab.com", url("https://github.com/WojciechMazur"))
     ),
-    scalaVersion := Scala2Version,
+    version := "0.1.1-SNAPSHOT",
+    scalaVersion := Scala213Version,
     semanticdbEnabled := true,
     semanticdbIncludeInJar := true,
     semanticdbVersion := scalafixSemanticdb.revision
@@ -24,7 +26,8 @@ inThisBuild(
 
 lazy val rules = project.settings(
   moduleName := "scalafix-migrate-circe-generic-extras",
-  libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion
+  libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
+  crossScalaVersions := Seq(Scala212Version, Scala213Version)
 )
 
 // Dependencies mostly used to check compilation of circe-generic sources
@@ -53,7 +56,7 @@ lazy val commonTestDependencies = List(
 
 lazy val input = project.settings(
   (publish / skip) := true,
-  scalaVersion := Scala2Version,
+  scalaVersion := Scala213Version,
   scalacOptions ++= Seq(
     "-Ymacro-annotations"
   ),
@@ -77,14 +80,12 @@ lazy val output = project.settings(
 
 lazy val tests = project
   .settings(
+    crossScalaVersions := Seq(Scala212Version, Scala213Version),
     (publish / skip) := true,
     libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % V.scalafixVersion % Test cross CrossVersion.full,
-    scalafixTestkitOutputSourceDirectories :=
-      (output / Compile / unmanagedSourceDirectories).value,
-    scalafixTestkitInputSourceDirectories :=
-      (input / Compile / unmanagedSourceDirectories).value,
-    scalafixTestkitInputClasspath :=
-      (input / Compile / fullClasspath).value
+    scalafixTestkitOutputSourceDirectories := (output / Compile / unmanagedSourceDirectories).value,
+    scalafixTestkitInputSourceDirectories := (input / Compile / unmanagedSourceDirectories).value,
+    scalafixTestkitInputClasspath := (input / Compile / fullClasspath).value
   )
   .dependsOn(rules)
   .enablePlugins(ScalafixTestkitPlugin)
