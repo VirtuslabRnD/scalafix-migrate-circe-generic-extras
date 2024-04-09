@@ -20,9 +20,13 @@ inThisBuild(
     scalaVersion := Scala213Version,
     semanticdbEnabled := true,
     semanticdbIncludeInJar := true,
-    semanticdbVersion := scalafixSemanticdb.revision
+    semanticdbVersion := scalafixSemanticdb.revision,
+    versionScheme := Some("early-semver")
   )
 )
+
+Global / PgpKeys.pgpPassphrase := sys.env.get("PGP_PW").map(_.toCharArray())
+Global / PgpKeys.pgpSigningKey := Some("BCE7DB09E1B2687C9C9C3AB2D8DF100359D36CBF")
 
 lazy val publishSettings = Def.settings(
   publishTo := sonatypePublishToBundle.value,
@@ -37,9 +41,7 @@ lazy val publishSettings = Def.settings(
       url("https://github.com/VirtusLabRnD/scalafix-migrate-circe-generic-extras"),
       "scm:git@github.com:VirtusLabRnD/scalafix-migrate-circe-generic-extras.git"
     )
-  ),
-  ThisBuild / versionScheme := Some("early-semver"),
-  PgpKeys.pgpPassphrase := sys.env.get("PGP_PW").map(_.toCharArray()),
+  )
 )
 
 lazy val rules = project.settings(
