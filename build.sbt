@@ -27,28 +27,24 @@ inThisBuild(
 
 Global / PgpKeys.pgpPassphrase := sys.env.get("PGP_PW").map(_.toCharArray())
 Global / PgpKeys.pgpSigningKey := Some("BCE7DB09E1B2687C9C9C3AB2D8DF100359D36CBF")
-
-lazy val publishSettings = Def.settings(
-  publishTo := sonatypePublishToBundle.value,
-  credentials ++= (
-    for {
-      username <- sys.env.get("SONATYPE_USER")
-      password <- sys.env.get("SONATYPE_PW")
-    } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
-  ).toList,
-  scmInfo := Some(
-    ScmInfo(
-      url("https://github.com/VirtusLabRnD/scalafix-migrate-circe-generic-extras"),
-      "scm:git@github.com:VirtusLabRnD/scalafix-migrate-circe-generic-extras.git"
-    )
+Global / publishTo := sonatypePublishToBundle.value
+Global / credentials ++= (
+  for {
+    username <- sys.env.get("SONATYPE_USER")
+    password <- sys.env.get("SONATYPE_PW")
+  } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
+).toList
+Global / scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/VirtusLabRnD/scalafix-migrate-circe-generic-extras"),
+    "scm:git@github.com:VirtusLabRnD/scalafix-migrate-circe-generic-extras.git"
   )
 )
 
 lazy val rules = project.settings(
   moduleName := "scalafix-migrate-circe-generic-extras",
   libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % V.scalafixVersion,
-  crossScalaVersions := Seq(Scala212Version, Scala213Version),
-  publishSettings
+  crossScalaVersions := Seq(Scala212Version, Scala213Version)
 )
 
 // Dependencies mostly used to check compilation of circe-generic sources
