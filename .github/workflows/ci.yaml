@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+    tags:
+      - '*'
 
 jobs:
-  tests:
+  test:
     name: Test scalafix rules
     runs-on: ubuntu-22.04
     steps:
@@ -32,3 +34,25 @@ jobs:
         run: |
           scala-cli test input
           scala-cli test output
+
+  publish_release:
+    runs-on: [ubuntu-22.04]
+    needs: [test]
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
+
+    steps:
+      - uses: coursier/setup-action@v1
+        with:
+          jvm: temurin:8
+      - uses: actions/checkout@v4
+      - name: Setup PGP Key
+        run: |
+          echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+      - name: Publish release
+        env:
+          PGP_PW: ${{ secrets.PGP_PW }}  
+          SONATYPE_PW: ${{ secrets.MAVEN_PASSWORD }}
+          SONATYPE_USER: ${{ secrets.MAVEN_USER }}
+        run: sbt "+rules/publishSigned; sonatypeBundleRelease"
