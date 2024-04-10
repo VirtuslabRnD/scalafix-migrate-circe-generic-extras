@@ -1,3 +1,5 @@
+[![scalafix-migrate-circe-generic-extras Scala version support](https://index.scala-lang.org/virtuslabrnd/scalafix-migrate-circe-generic-extras/scalafix-migrate-circe-generic-extras/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/virtuslabrnd/scalafix-migrate-circe-generic-extras/scalafix-migrate-circe-generic-extras)
+
 # Scalafix rules for circe-generic-extra migration
 
 This project contains set of rules allowing to migrate Scala 2 macro-annotation based codecs into Scala 3 built-in derivation. 
