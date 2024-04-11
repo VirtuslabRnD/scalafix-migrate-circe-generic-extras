@@ -58,6 +58,9 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
     val GenericExtrasJsonKey = Symbol("io/circe/generic/extras/JsonKey#")
     val GenericExtrasJsonNoDefault = Symbol("io/circe/generic/extras/JsonNoDefault#")
     val DeriveUnwrappedCodec = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedCodec().")
+    val DeriveUnwrappedEncoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedEncoder().")
+    val DeriveUnwrappedDecoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedDecoder().")
+    val DeriveUnwrappedMethods = Seq(DeriveUnwrappedCodec, DeriveUnwrappedEncoder, DeriveUnwrappedDecoder)
 
     val DerivationAnnotConfiguration = Symbol("io/circe/derivation/annotations/Configuration#")
     val DerivationAnnotJsonCodec = Symbol("io/circe/derivation/annotations/JsonCodec#")
@@ -81,34 +84,41 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
 
   override def fix(implicit doc: SemanticDocument): Patch = {
     object names {
-      sealed abstract class NameExtractor(val name: String) {
+      sealed abstract class NameExtractor(symbol: Symbol, val shouldBeRemoved: Boolean = false) {
+        val name: String = symbol.displayName
         val aliases: mutable.Set[String] = mutable.Set.empty
-        def unapply(t: Name): Boolean =
+        def aliasOrName: String = aliases.headOption.getOrElse(name)
+        def unapply(t: Name): Boolean = {
           t.value == name || aliases.contains(t.value)
+        }
       }
-      object ReplacedName {
-        val extractors = Seq(
-          JsonCodec,
-          ConfiguredJsonCodec,
-          ConfiguredEncoder,
-          ConfiguredDecoder,
-          Configuration,
-          JsonKey,
-          JsonNoDefault
+      object NameExtractor {
+        private lazy val extractors = Seq(
+          // format: off
+          JsonKey, JsonNoDefault, 
+          JsonCodec, ConfiguredJsonCodec, ConfiguredEncoder, ConfiguredDecoder,
+          DeriveUnwrappedCodec, DeriveUnwrappedEncoder, DeriveUnwrappedDecoder,
+          CirceConfiguration, CirceCodec, CirceEncoder, CirceDecoder
+          // format: on
         )
         def unapply(t: Name): Option[NameExtractor] =
           extractors.iterator.collectFirst {
             case extractor if extractor.unapply(t) => extractor
           }
       }
-      object JsonKey extends NameExtractor(symbols.GenericExtrasJsonKey.displayName)
-      object JsonNoDefault extends NameExtractor(symbols.GenericExtrasJsonNoDefault.displayName)
-      object JsonCodec extends NameExtractor(symbols.GenericExtrasJsonCodec.displayName)
-      object ConfiguredJsonCodec extends NameExtractor(symbols.GenericExtrasConfiguredJsonCodec.displayName)
-      object ConfiguredEncoder extends NameExtractor(symbols.GenericExtrasConfiguredEncoder.displayName)
-      object ConfiguredDecoder extends NameExtractor(symbols.GenericExtrasConfiguredDecoder.displayName)
-      object Configuration extends NameExtractor(symbols.GenericExtrasConfiguration.displayName)
-
+      object JsonKey extends NameExtractor(symbols.GenericExtrasJsonKey, shouldBeRemoved = true)
+      object JsonNoDefault extends NameExtractor(symbols.GenericExtrasJsonNoDefault, shouldBeRemoved = true)
+      object JsonCodec extends NameExtractor(symbols.GenericExtrasJsonCodec, shouldBeRemoved = true)
+      object ConfiguredJsonCodec extends NameExtractor(symbols.GenericExtrasConfiguredJsonCodec, shouldBeRemoved = true)
+      object ConfiguredEncoder extends NameExtractor(symbols.GenericExtrasConfiguredEncoder, shouldBeRemoved = true)
+      object ConfiguredDecoder extends NameExtractor(symbols.GenericExtrasConfiguredDecoder, shouldBeRemoved = true)
+      object CirceConfiguration extends NameExtractor(symbols.GenericExtrasConfiguration, shouldBeRemoved = true)
+      object CirceCodec extends NameExtractor(symbols.Codec)
+      object CirceEncoder extends NameExtractor(symbols.Encoder)
+      object CirceDecoder extends NameExtractor(symbols.Decoder)
+      object DeriveUnwrappedCodec extends NameExtractor(symbols.DeriveUnwrappedCodec)
+      object DeriveUnwrappedEncoder extends NameExtractor(symbols.DeriveUnwrappedEncoder, shouldBeRemoved = true)
+      object DeriveUnwrappedDecoder extends NameExtractor(symbols.DeriveUnwrappedDecoder, shouldBeRemoved = true)
     }
     object annots {
       object JsonKey {
@@ -131,7 +141,7 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
       val companionObjects = Map.newBuilder[String, Defn.Object]
       val codecForSymbol = Map.newBuilder[String, CodecKind]
       doc.tree.traverse {
-        case t @ Importee.Name(names.ReplacedName(_)) =>
+        case t @ Importee.Name(names.NameExtractor(name)) if name.shouldBeRemoved =>
           patches += Patch.removeImportee(t)
         case t @ Importer(pkg, importees) =>
           pkg.symbol match {
@@ -140,9 +150,9 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
             case _ => ()
           }
 
-        case t @ Importee.Rename(names.ReplacedName(extractor), alias) =>
-          patches += Patch.removeImportee(t)
-          extractor.aliases += alias.value
+        case t @ Importee.Rename(names.NameExtractor(name), alias) =>
+          if (name.shouldBeRemoved) patches += Patch.removeImportee(t)
+          name.aliases += alias.value
 
         case t: Defn.Object => companionObjects += t.name.value -> t
         case t: Defn with Member.Type with Stat.WithMods =>
@@ -172,6 +182,10 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
             case symbols.GenericExtrasConfiguredDecoder   => replaceImport(symbols.ConfiguredDecoder)
             case symbols.GenericExtrasJsonCodec           => removeImport()
             case symbols.GenericExtrasJsonKey             => removeImport()
+
+            case symbols.DeriveUnwrappedCodec   => removeImport()
+            case symbols.DeriveUnwrappedEncoder => removeImport()
+            case symbols.DeriveUnwrappedDecoder => removeImport()
 
             case symbols.DerivationAnnotConfiguration => replaceImport(symbols.Configuration)
             case symbols.DerivationAnnotJsonCodec     => replaceImport(symbols.Codec)
@@ -473,75 +487,87 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
         }
 
       case defn: Defn with Tree.WithDeclTpeOpt with Tree.WithBody =>
-        defn.body.symbol match {
-          case symbols.DeriveUnwrappedCodec =>
-            // implicit val codec: Codec[ThingId] = Codec.from(
-            //   summon[Decoder[String]].map(ThingId(_)),
-            //   summon[Encoder[String]].contramap(_.value)
-            // )
-            defn.decltpe
-              .collect {
-                case Type.Apply(Type.Name("Codec"), tpe :: Nil) if !tpe.symbol.isNone => tpe
-              }
-              .map { tpe =>
-                val symbol = tpe.symbol
-                val ctor = symbol.info.map(_.signature).collect { case cls: ClassSignature =>
-                  cls.declarations.filter(_.isConstructor).map(_.signature).collect {
-                    case MethodSignature(_, List(List(singleParam)), _) =>
-                      singleParam.signature match {
-                        case ValueSignature(tpe: TypeRef) =>
-                          // Codec.from(decoder, encoder)
-                          val newBody = Term.Apply(
-                            Term.Select(Term.Name(symbols.Codec.displayName), Term.Name("from")),
-                            List(
-                              // summon[Decoder[String]].map(ThingId(_))
-                              Term.Apply(
-                                Term.Select(
-                                  Term.ApplyType(
-                                    Term.Name("summon"),
-                                    List(
-                                      Type.Apply(
-                                        Type.Name(symbols.Decoder.displayName),
-                                        List(Type.Name(tpe.symbol.displayName))
-                                      )
-                                    )
-                                  ),
-                                  Term.Name("map")
-                                ),
-                                List(Term.Apply(Term.Name(symbol.displayName), List(Term.Placeholder())))
-                              ),
-                              // summon[Encoder[String]].contramap(_.param)
-                              Term.Apply(
-                                Term.Select(
-                                  Term.ApplyType(
-                                    Term.Name("summon"),
-                                    List(
-                                      Type.Apply(
-                                        Type.Name(symbols.Encoder.displayName),
-                                        List(Type.Name(tpe.symbol.displayName))
-                                      )
-                                    )
-                                  ),
-                                  Term.Name("contramap")
-                                ),
-                                List(Term.Select(Term.Placeholder(), Term.Name(singleParam.displayName)))
-                              )
-                            )
-                          )
-                          patches += Seq(
-                            Patch.addGlobalImport(symbols.Codec),
-                            Patch.addGlobalImport(symbols.Encoder),
-                            Patch.addGlobalImport(symbols.Decoder),
-                            Patch.replaceTree(defn.body, newBody.syntax)
-                          ).asPatch
+        def valueClassDecoder(runtimeType: TypeRef, valueClassType: Type) = {
+          patches += Patch.addGlobalImport(symbols.Decoder)
+          // summon[Decoder[String]].map(ThingId(_))
+          Term.Apply(
+            Term.Select(
+              Term.ApplyType(
+                Term.Name("summon"),
+                List(
+                  Type.Apply(
+                    Type.Name(names.CirceDecoder.aliasOrName),
+                    List(Type.Name(runtimeType.symbol.displayName))
+                  )
+                )
+              ),
+              Term.Name("map")
+            ),
+            List(Term.Apply(Term.Name(valueClassType.symbol.displayName), List(Term.Placeholder())))
+          )
+        }
+        def valueClassEncoder(tpe: TypeRef, valueName: String) = {
+          patches += Patch.addGlobalImport(symbols.Encoder)
+          // summon[Encoder[String]].contramap(_.param)
+          Term.Apply(
+            Term.Select(
+              Term.ApplyType(
+                Term.Name("summon"),
+                List(
+                  Type.Apply(
+                    Type.Name(names.CirceEncoder.aliasOrName),
+                    List(Type.Name(tpe.symbol.displayName))
+                  )
+                )
+              ),
+              Term.Name("contramap")
+            ),
+            List(Term.Select(Term.Placeholder(), Term.Name(valueName)))
+          )
+        }
 
-                        case _ =>
-                      }
+        if (symbols.DeriveUnwrappedMethods.contains(defn.body.symbol)) {
+          patches ++= defn.decltpe
+            .collect {
+              case Type.Apply(_, valueClassType :: Nil) if !valueClassType.symbol.isNone =>
+                val symbol = valueClassType.symbol
+                symbol.info
+                  .map(_.signature)
+                  .collectFirst { case cls: ClassSignature =>
+                    cls.declarations.filter(_.isConstructor).map(_.signature).collectFirst {
+                      case MethodSignature(_, List(List(singleParam)), _) =>
+                        singleParam.signature match {
+                          case ValueSignature(runtimeType: TypeRef) => Some((runtimeType, singleParam))
+                          case _                                    => None
+                        }
+                    }
                   }
-                }
-              }
-          // patches += Patch.replaceTree(defn.body, )
-          case _ => ()
+                  .flatten
+                  .flatten
+                  .map { case (runtimeType, param) =>
+                    defn.body.symbol match {
+                      case symbols.DeriveUnwrappedEncoder =>
+                        Patch.replaceTree(defn.body, valueClassEncoder(runtimeType, param.symbol.displayName).syntax)
+                      case symbols.DeriveUnwrappedDecoder =>
+                        Patch.replaceTree(defn.body, valueClassDecoder(runtimeType, valueClassType).syntax)
+                      case symbols.DeriveUnwrappedCodec =>
+                        // Codec.from(decoder, encoder)
+                        val newBody = Term.Apply(
+                          Term.Select(Term.Name(names.CirceCodec.aliasOrName), Term.Name("from")),
+                          List(
+                            valueClassDecoder(runtimeType, valueClassType),
+                            valueClassEncoder(runtimeType, param.symbol.displayName)
+                          )
+                        )
+                        Seq(
+                          Patch.addGlobalImport(symbols.Codec),
+                          Patch.replaceTree(defn.body, newBody.syntax)
+                        ).asPatch
+                    }
+                  }
+            }
+            .flatten
+            .toList
         }
     }
     Patch.fromIterable(patches.result())
