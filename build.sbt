@@ -48,7 +48,7 @@ lazy val rules = project.settings(
 )
 
 // Dependencies mostly used to check compilation of circe-generic sources
-val circeVersion = "0.14.6"
+val circeVersion = "0.14.7"
 val circeGenericExtrasVersion = "0.14.3"
 val circeDerivationVersion = "0.13.0-M5"
 val jawnVersion = "1.5.1"
