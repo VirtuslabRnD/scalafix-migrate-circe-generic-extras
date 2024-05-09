@@ -47,6 +47,10 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
     val ConfiguredEncoder = Symbol("io/circe/derivation/ConfiguredEncoder#")
     val ConfiguredDecoder = Symbol("io/circe/derivation/ConfiguredDecoder#")
     val Configuration = Symbol("io/circe/derivation/Configuration#")
+    val DeriveCodec = Symbol("io/circe/generic/semiauto.deriveCodec().")
+    val DeriveEncoder = Symbol("io/circe/generic/semiauto.deriveEncoder().")
+    val DeriveDecoder = Symbol("io/circe/generic/semiauto.deriveDecoder().")
+    val GenericSemiautoPackage = Symbol("io/circe/generic/extras/semiauto.")
 
     val GenericExtrasPackage = Symbol("io/circe/generic/extras/")
     val GenericExtrasConfiguration = Symbol("io/circe/generic/extras/Configuration#")
@@ -57,10 +61,24 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
     val GenericExtrasJsonCodec = Symbol("io/circe/generic/extras/JsonCodec#")
     val GenericExtrasJsonKey = Symbol("io/circe/generic/extras/JsonKey#")
     val GenericExtrasJsonNoDefault = Symbol("io/circe/generic/extras/JsonNoDefault#")
-    val DeriveUnwrappedCodec = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedCodec().")
-    val DeriveUnwrappedEncoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedEncoder().")
-    val DeriveUnwrappedDecoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedDecoder().")
-    val DeriveUnwrappedMethods = Seq(DeriveUnwrappedCodec, DeriveUnwrappedEncoder, DeriveUnwrappedDecoder)
+    val GenericExtrasSemiautoPackage = Symbol("io/circe/generic/extras/semiauto.")
+    val GenericExtrasDeriveCodec = Symbol("io/circe/generic/extras/semiauto.deriveCodec().")
+    val GenericExtrasDeriveEncoder = Symbol("io/circe/generic/extras/semiauto.deriveEncoder().")
+    val GenericExtrasDeriveDecoder = Symbol("io/circe/generic/extras/semiauto.deriveDecoder().")
+    val GenericExtrasDeriveConfiguredCodec = Symbol("io/circe/generic/extras/semiauto.deriveConfiguredCodec().")
+    val GenericExtrasDeriveConfiguredEncoder = Symbol("io/circe/generic/extras/semiauto.deriveConfiguredEncoder().")
+    val GenericExtrasDeriveConfiguredDecoder = Symbol("io/circe/generic/extras/semiauto.deriveConfiguredDecoder().")
+    val GenericExtrasDeriveUnwrappedCodec = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedCodec().")
+    val GenericExtrasDeriveUnwrappedEncoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedEncoder().")
+    val GenericExtrasDeriveUnwrappedDecoder = Symbol("io/circe/generic/extras/semiauto.deriveUnwrappedDecoder().")
+    val GenericExtrasSemiautoDeriveMethods = Seq(
+      // format: off
+      GenericExtrasDeriveCodec, GenericExtrasDeriveEncoder, GenericExtrasDeriveDecoder,
+      GenericExtrasDeriveConfiguredCodec, GenericExtrasDeriveConfiguredEncoder, GenericExtrasDeriveConfiguredDecoder,
+      // format: on
+    )
+    val GenericExtrasDeriveUnwrappedMethods =
+      Seq(GenericExtrasDeriveUnwrappedCodec, GenericExtrasDeriveUnwrappedEncoder, GenericExtrasDeriveUnwrappedDecoder)
 
     val DerivationAnnotConfiguration = Symbol("io/circe/derivation/annotations/Configuration#")
     val DerivationAnnotJsonCodec = Symbol("io/circe/derivation/annotations/JsonCodec#")
@@ -97,8 +115,10 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
           // format: off
           JsonKey, JsonNoDefault, 
           JsonCodec, ConfiguredJsonCodec, ConfiguredEncoder, ConfiguredDecoder,
+          DeriveCodec, DeriveEncoder, DeriveDecoder,
+          DeriveConfiguredCodec, DeriveConfiguredEncoder, DeriveConfiguredDecoder,
           DeriveUnwrappedCodec, DeriveUnwrappedEncoder, DeriveUnwrappedDecoder,
-          CirceConfiguration, CirceCodec, CirceEncoder, CirceDecoder
+          CirceConfiguration, CirceCodec, CirceEncoder, CirceDecoder,
           // format: on
         )
         def unapply(t: Name): Option[NameExtractor] =
@@ -116,9 +136,21 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
       object CirceCodec extends NameExtractor(symbols.Codec)
       object CirceEncoder extends NameExtractor(symbols.Encoder)
       object CirceDecoder extends NameExtractor(symbols.Decoder)
-      object DeriveUnwrappedCodec extends NameExtractor(symbols.DeriveUnwrappedCodec)
-      object DeriveUnwrappedEncoder extends NameExtractor(symbols.DeriveUnwrappedEncoder, shouldBeRemoved = true)
-      object DeriveUnwrappedDecoder extends NameExtractor(symbols.DeriveUnwrappedDecoder, shouldBeRemoved = true)
+      object DeriveUnwrappedCodec
+          extends NameExtractor(symbols.GenericExtrasDeriveUnwrappedCodec, shouldBeRemoved = true)
+      object DeriveUnwrappedEncoder
+          extends NameExtractor(symbols.GenericExtrasDeriveUnwrappedEncoder, shouldBeRemoved = true)
+      object DeriveUnwrappedDecoder
+          extends NameExtractor(symbols.GenericExtrasDeriveUnwrappedDecoder, shouldBeRemoved = true)
+      object DeriveCodec extends NameExtractor(symbols.GenericExtrasDeriveCodec, shouldBeRemoved = true)
+      object DeriveEncoder extends NameExtractor(symbols.GenericExtrasDeriveEncoder, shouldBeRemoved = true)
+      object DeriveDecoder extends NameExtractor(symbols.GenericExtrasDeriveDecoder, shouldBeRemoved = true)
+      object DeriveConfiguredCodec
+          extends NameExtractor(symbols.GenericExtrasDeriveConfiguredCodec, shouldBeRemoved = true)
+      object DeriveConfiguredEncoder
+          extends NameExtractor(symbols.GenericExtrasDeriveConfiguredEncoder, shouldBeRemoved = true)
+      object DeriveConfiguredDecoder
+          extends NameExtractor(symbols.GenericExtrasDeriveConfiguredDecoder, shouldBeRemoved = true)
     }
     object annots {
       object JsonKey {
@@ -145,7 +177,7 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
           patches += Patch.removeImportee(t)
         case t @ Importer(pkg, importees) =>
           pkg.symbol match {
-            case symbols.DerivationAnnotPackage | symbols.GenericExtrasPackage =>
+            case symbols.DerivationAnnotPackage | symbols.GenericExtrasPackage | symbols.GenericExtrasSemiautoPackage =>
               patches += importees.map(Patch.removeImportee(_)).reduce(_ + _)
             case _ => ()
           }
@@ -183,9 +215,9 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
             case symbols.GenericExtrasJsonCodec           => removeImport()
             case symbols.GenericExtrasJsonKey             => removeImport()
 
-            case symbols.DeriveUnwrappedCodec   => removeImport()
-            case symbols.DeriveUnwrappedEncoder => removeImport()
-            case symbols.DeriveUnwrappedDecoder => removeImport()
+            case symbols.GenericExtrasDeriveUnwrappedCodec   => removeImport()
+            case symbols.GenericExtrasDeriveUnwrappedEncoder => removeImport()
+            case symbols.GenericExtrasDeriveUnwrappedDecoder => removeImport()
 
             case symbols.DerivationAnnotConfiguration => replaceImport(symbols.Configuration)
             case symbols.DerivationAnnotJsonCodec     => replaceImport(symbols.Codec)
@@ -526,7 +558,8 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
           )
         }
 
-        if (symbols.DeriveUnwrappedMethods.contains(defn.body.symbol)) {
+        val rhsSymbol = defn.body.symbol
+        if (symbols.GenericExtrasDeriveUnwrappedMethods.contains(rhsSymbol)) {
           patches ++= defn.decltpe
             .collect {
               case Type.Apply(_, valueClassType :: Nil) if !valueClassType.symbol.isNone =>
@@ -545,12 +578,12 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
                   .flatten
                   .flatten
                   .map { case (runtimeType, param) =>
-                    defn.body.symbol match {
-                      case symbols.DeriveUnwrappedEncoder =>
+                    rhsSymbol match {
+                      case symbols.GenericExtrasDeriveUnwrappedEncoder =>
                         Patch.replaceTree(defn.body, valueClassEncoder(runtimeType, param.symbol.displayName).syntax)
-                      case symbols.DeriveUnwrappedDecoder =>
+                      case symbols.GenericExtrasDeriveUnwrappedDecoder =>
                         Patch.replaceTree(defn.body, valueClassDecoder(runtimeType, valueClassType).syntax)
-                      case symbols.DeriveUnwrappedCodec =>
+                      case symbols.GenericExtrasDeriveUnwrappedCodec =>
                         // Codec.from(decoder, encoder)
                         val newBody = Term.Apply(
                           Term.Select(Term.Name(names.CirceCodec.aliasOrName), Term.Name("from")),
@@ -568,6 +601,26 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
             }
             .flatten
             .toList
+        } else if (symbols.GenericExtrasSemiautoDeriveMethods.contains(rhsSymbol)) {
+          val bodyRewrite = rhsSymbol match {
+
+            // New syntax
+            case symbols.GenericExtrasDeriveConfiguredCodec   => Patch.replaceTree(defn.body, "Codec.derived")
+            case symbols.GenericExtrasDeriveConfiguredEncoder => Patch.replaceTree(defn.body, "Encoder.derived")
+            case symbols.GenericExtrasDeriveConfiguredDecoder =>
+              Patch.replaceTree(defn.body, "Decoder.derivedConfigured")
+            // Depreacted syntax, not requiring configuration
+            case symbols.GenericExtrasDeriveCodec | symbols.GenericExtrasDeriveEncoder |
+                symbols.GenericExtrasDeriveDecoder =>
+              val semiautoObjRef = Term.Select(
+                Term.Select(Term.Select(Term.Name("io"), Term.Name("circe")), Term.Name("generic")),
+                Term.Name("semiauto")
+              )
+              Patch.addGlobalImport(Importer(semiautoObjRef, List(Importee.Wildcard())))
+
+          }
+          patches += bodyRewrite + Patch.removeGlobalImport(rhsSymbol)
+
         }
     }
     Patch.fromIterable(patches.result())
