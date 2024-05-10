@@ -3,14 +3,14 @@ import io.circe.derivation.{ Configuration, ConfiguredCodec }
 
 object CirceDerivationAnnotations {
   object jsonCodec {
-    case class CClass0() derives Codec.AsObject
-    case class CClass1(name: String) derives Codec.AsObject
+    case class CClass0() derives Codec
+    case class CClass1(name: String) derives Codec
     case class CClass1Generic1[T](v: T)
-    object CClass1Generic1 { given [T: Encoder: Decoder]: Codec[CClass1Generic1[T]] = Codec.AsObject.derived }
+    object CClass1Generic1 { given [T: Encoder: Decoder]: Codec[CClass1Generic1[T]] = Codec.derived }
     case class CClass2Generic2[A, B](a: A, b: B)
-    object CClass2Generic2 { given [A: Encoder: Decoder, B: Encoder: Decoder]: Codec[CClass2Generic2[A, B]] = Codec.AsObject.derived }
-    sealed trait T1 derives Codec.AsObject { def name: String }
-    case class T1Impl(name: String, count: Int) extends T1 derives Codec.AsObject
+    object CClass2Generic2 { given [A: Encoder: Decoder, B: Encoder: Decoder]: Codec[CClass2Generic2[A, B]] = Codec.derived }
+    sealed trait T1 derives Codec { def name: String }
+    case class T1Impl(name: String, count: Int) extends T1 derives Codec
 
     implicitly[Codec[CClass0]]
     implicitly[Codec[CClass1]]
@@ -43,7 +43,7 @@ object CirceDerivationAnnotations {
   }
 
   object jsonCodecWithJsonKey {
-    case class CClass0() derives Codec.AsObject
+    case class CClass0() derives Codec
     case class CClass1(name: String)
     object CClass1 {
   given Codec[CClass1] = ConfiguredCodec.derived(using Configuration.default.withTransformMemberNames {

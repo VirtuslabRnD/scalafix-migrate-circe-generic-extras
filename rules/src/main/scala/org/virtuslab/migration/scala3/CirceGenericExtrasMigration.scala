@@ -30,7 +30,7 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
   }
   abstract case class CodecKind(symbol: Symbol, tpe: Type, contextBounds: List[Type])
   object CodecKind {
-    object Codec extends CodecKind(symbols.Codec, types.CodecAsObject, List(types.Encoder, types.Decoder))
+    object Codec extends CodecKind(symbols.Codec, types.Codec, List(types.Encoder, types.Decoder))
     object ConfiguredCodec
         extends CodecKind(symbols.ConfiguredCodec, types.ConfiguredCodec, List(types.Encoder, types.Decoder))
     object ConfiguredEncoder extends CodecKind(symbols.ConfiguredEncoder, types.ConfiguredEncoder, List(types.Encoder))
@@ -39,7 +39,6 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
 
   object symbols {
     val Codec = Symbol("io/circe/Codec#")
-    val CodecAsObject = Symbol("io/circe/Codec/AsObject#")
     val Encoder = Symbol("io/circe/Encoder#")
     val Decoder = Symbol("io/circe/Decoder#")
 
@@ -97,7 +96,6 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
     val ConfiguredEncoder = fromSymbol(symbols.ConfiguredEncoder)
     val ConfiguredDecoder = fromSymbol(symbols.ConfiguredDecoder)
     val Codec = fromSymbol(symbols.Codec)
-    val CodecAsObject = select(symbols.Codec, "AsObject")
   }
 
   override def fix(implicit doc: SemanticDocument): Patch = {
@@ -373,10 +371,7 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
                 )
               ),
           decltpe = Type.Apply(
-            tpe = codecType match {
-              case types.CodecAsObject => types.Codec
-              case tpe                 => tpe
-            },
+            tpe = codecType,
             args = {
               if (tree.tparamClause.isEmpty) tree.name
               else
@@ -398,7 +393,7 @@ final class CirceGenericExtrasMigration extends SemanticRule("CirceGenericExtras
                 Term.Name(symbols.ConfiguredCodec.displayName)
               } else {
                 patches += Patch.addGlobalImport(symbols.Codec)
-                Term.Select(Term.Name(symbols.Codec.displayName), Term.Name(symbols.CodecAsObject.displayName))
+                Term.Name(symbols.Codec.displayName)
               }
             Term.Select(derivedCodecName, Term.Name("derived"))
           }(Term.Apply(_, _))
