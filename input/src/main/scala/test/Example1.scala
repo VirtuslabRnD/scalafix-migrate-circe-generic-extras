@@ -22,7 +22,7 @@ object Example1 extends App {
   @JsonCodecAlias
   case class Address(line: String)
 
-  implicit val config: Configuration = Configuration.default
+  implicit lazy val config: Configuration = Configuration.default
   @ConfiguredJsonCodec
   case class Foo(v: Int)
   @ConfiguredJsonCodec(decodeOnly = true)
