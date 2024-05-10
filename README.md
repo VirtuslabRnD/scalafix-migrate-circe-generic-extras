@@ -7,10 +7,27 @@ This project contains set of rules allowing to migrate Scala 2 macro-annotation 
 ## Available rules: 
 
 ### `CirceGenericExtrasMigration`
-Main rule, detects usages of `JsonCodec`, `ConfiguredJsonCodec` macro-annotations and replaces them with derived `Codec.AsObject` or `ConfiguredCodec` instances. 
-Supports `@JsonKey` annotation used to renaem fields defined either in primary constructor or as member fields (renames or member fields are working using best effort principles).
-Supoprts `ConfiguredJsonCodec(encodeOnly = true)` and `ConfiguredJsonCodec(decodeOnly = true)` variants, these would be rewritten into `ConfiguredEncoder` or `ConfiguredDecoder` derived instances.
-Can be used to migrate usages of both `circe-generic-extras` and `circe-derivation` to Scala 3.
+Main rule, detects usages of macro-annotations or derivation from `circe-generic-extras` and replaces them with the counterparts defined in `circe` core Scala 3 library.
+
+**Compatible with Circe 0.14.7 or later.**
+
+Can be used to migrate usages of both `circe-generic-extras` and `circe-derivation` (partially) to Scala 3.
+
+Supported rewrites:
+
+- [x] - `JsonCodec` macro-annotations - replaced with `Codec` derivation;
+- [x] - `ConfiguredJsonCodec` macro-annotations - replaced with `ConfiguredCodec` derivation;
+- [x] - `ConfiguredJsonCodec(encodeOnly = true)` / `ConfiguredJsonCodec(decodeOnly = true)` - rewritten into  `ConfiguredEncoder` or `ConfiguredDecoder` derived instances;
+- [x] - `@JsonKey`  annotations - field names defined in primary constructor or as member fields are transformed into dedicated `Configuraiton` instance;
+- [ ] - `generic.extras.semiauto`:
+  - [x] - `deriveCodec[T]`, `deriveDecoder[T]`, `deriveEncoder[T]`, - replaces calls to methods defined in `io.circe.generic.extras.semiauto._` with their counterpart in  `io.circe.generic.semiauto._`, does not requrie implicit `Configuration`
+  - [x] - `deriveConfiguredCodec[T]`, `deriveConfiguredDecoder[T]`, `deriveConfiguredEncoder[T]` - rewritten into `Codec.derived` / `Decoder.derivedConfigured` / `Encoder.derived`
+  - [x] - `deriveUnwrappedCodec[T]`, `deriveUnwrappedDecoder[T]`, `deriveUnwrappedEncoder[T]` - rewritten into `Codec`/`Decoder`/`Encoder` constructed from value class underlying type and `map`/`contramap` operations.
+  - [ ] - `deriveEnumerationCodec[T]`, `deriveEnumerationDecoder[T]`, `deriveEnumerationEncoder[T]` - not yet supported
+  - [ ] - `deriveFor` - no replacement in Scala 3
+  - [ ] - `deriveExtrasCodec[T]`, `deriveExtrasDecoder[T]`, `deriveExtrasEncoder[T]`: no replecement in Scala 3
+  
+
 
 ### `CirceLiteralMigration`
 Simple rule allowing to adopt to `json` string interpolator changes done in Scala 3. Would rewrite imports `io.circe.literal.JsonStringContext` into `io.circe.literal.json`.
