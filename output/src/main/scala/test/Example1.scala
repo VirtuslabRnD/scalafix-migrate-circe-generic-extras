@@ -11,10 +11,10 @@ import io.circe.literal.json
 object Example1 extends App {
 
   // 1. CirceGenericExtrasMigration
-  case class Person(name: String, age: Int) derives Codec.AsObject
+  case class Person(name: String, age: Int) derives Codec
   println("Person: " + Person("Bob", 42).asJson)
 
-  case class Address(line: String) derives Codec.AsObject
+  case class Address(line: String) derives Codec
 
   implicit val config: Configuration = Configuration.default
   case class Foo(v: Int) derives ConfiguredCodec
