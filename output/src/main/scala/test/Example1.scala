@@ -16,7 +16,7 @@ object Example1 extends App {
 
   case class Address(line: String) derives Codec
 
-  implicit val config: Configuration = Configuration.default
+  implicit lazy val config: Configuration = Configuration.default
   case class Foo(v: Int) derives ConfiguredCodec
   case class FooRead(foo: Foo) derives ConfiguredDecoder
   case class FooWrite(foo: Foo) derives ConfiguredEncoder
