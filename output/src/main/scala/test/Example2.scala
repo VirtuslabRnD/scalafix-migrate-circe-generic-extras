@@ -39,7 +39,6 @@ object Example2 extends App {
   )
 
   // 3. Sum types with a discriminator
-  sealed trait Fruit derives ConfiguredCodec
   object Fruit {
     implicit val configuration: Configuration =
       Configuration.default.withScreamingSnakeCaseConstructorNames
@@ -49,6 +48,7 @@ object Example2 extends App {
     case class Apple(diameter: Double, variety: String) extends Fruit
     case object Grape extends Fruit
   }
+  sealed trait Fruit derives ConfiguredCodec
   import Fruit.{Apple, Banana, Grape}
 
   val fruits: List[Fruit] = List(Banana(3.14), Apple(0.07, "Fuji"), Grape)
