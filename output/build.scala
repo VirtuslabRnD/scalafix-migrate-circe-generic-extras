@@ -2,6 +2,7 @@
 //> using dep com.beachape::enumeratum:1.7.3
 //> using dep com.beachape::enumeratum-circe:1.7.3
 //> using dep io.circe::circe-core:0.14.7
+//> using dep io.circe::circe-generic:0.14.7
 //> using dep io.circe::circe-literal:0.14.7
 //> using dep io.circe::circe-parser:0.14.7
 //> using dep io.circe::circe-testing:0.14.7
