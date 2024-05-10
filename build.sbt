@@ -16,7 +16,7 @@ inThisBuild(
     developers := List(
       Developer("WojciechMazur", "Wojciech Mazur", "wmazur@virtuslab.com", url("https://github.com/WojciechMazur"))
     ),
-    version := "0.1.2",
+    version := "0.2.0",
     scalaVersion := Scala213Version,
     semanticdbEnabled := true,
     semanticdbIncludeInJar := true,
