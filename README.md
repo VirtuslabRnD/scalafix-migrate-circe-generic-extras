@@ -20,7 +20,7 @@ Supported rewrites:
 - [x] - `ConfiguredJsonCodec(encodeOnly = true)` / `ConfiguredJsonCodec(decodeOnly = true)` - rewritten into  `ConfiguredEncoder` or `ConfiguredDecoder` derived instances;
 - [x] - `@JsonKey`  annotations - field names defined in primary constructor or as member fields are transformed into dedicated `Configuraiton` instance;
 - [ ] - `generic.extras.semiauto`:
-  - [x] - `deriveCodec[T]`, `deriveDecoder[T]`, `deriveEncoder[T]`, - replaces calls to methods defined in `io.circe.generic.extras.semiauto._` with their counterpart in  `io.circe.generic.semiauto._`, does not requrie implicit `Configuration`
+  - [x] - `deriveCodec[T]`, `deriveDecoder[T]`, `deriveEncoder[T]`, - replaces calls to methods defined in `io.circe.generic.extras.semiauto._` with their counterpart in  `io.circe.generic.semiauto._`, does not requrie implicit `Configuration`. Requires `io.circe::circe-generic` dependency
   - [x] - `deriveConfiguredCodec[T]`, `deriveConfiguredDecoder[T]`, `deriveConfiguredEncoder[T]` - rewritten into `Codec.derived` / `Decoder.derivedConfigured` / `Encoder.derived`
   - [x] - `deriveUnwrappedCodec[T]`, `deriveUnwrappedDecoder[T]`, `deriveUnwrappedEncoder[T]` - rewritten into `Codec`/`Decoder`/`Encoder` constructed from value class underlying type and `map`/`contramap` operations.
   - [ ] - `deriveEnumerationCodec[T]`, `deriveEnumerationDecoder[T]`, `deriveEnumerationEncoder[T]` - not yet supported
