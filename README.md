@@ -18,7 +18,7 @@ Supported rewrites:
 - [x] - `JsonCodec` macro-annotations - replaced with `Codec` derivation;
 - [x] - `ConfiguredJsonCodec` macro-annotations - replaced with `ConfiguredCodec` derivation;
 - [x] - `ConfiguredJsonCodec(encodeOnly = true)` / `ConfiguredJsonCodec(decodeOnly = true)` - rewritten into  `ConfiguredEncoder` or `ConfiguredDecoder` derived instances;
-- [x] - `@JsonKey`  annotations - field names defined in primary constructor or as member fields are transformed into dedicated `Configuraiton` instance;
+- [x] - `@JsonKey`  annotations - field names defined in primary constructor or as member fields are transformed into dedicated `Configuration` instance;
 - [ ] - `generic.extras.semiauto`:
   - [x] - `deriveCodec[T]`, `deriveDecoder[T]`, `deriveEncoder[T]`, - replaces calls to methods defined in `io.circe.generic.extras.semiauto._` with their counterpart in  `io.circe.generic.semiauto._`, does not requrie implicit `Configuration`. Requires `io.circe::circe-generic` dependency
   - [x] - `deriveConfiguredCodec[T]`, `deriveConfiguredDecoder[T]`, `deriveConfiguredEncoder[T]` - rewritten into `Codec.derived` / `Decoder.derivedConfigured` / `Encoder.derived`
